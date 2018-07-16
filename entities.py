@@ -1,4 +1,7 @@
+import datetime
 import json
+import matplotlib.pyplot as plt
+import pandas as pd
 import string
 
 
@@ -30,7 +33,7 @@ class Lot(ParsedMessage):
         self.lot_id = int(lot_id)
         while not item[0] in string.ascii_uppercase:
             item = item[1:]
-        self.item = item
+        self.item = item.lower()
         self.price = int(price)
         self.buyer = buyer
         self.status = status
@@ -38,31 +41,62 @@ class Lot(ParsedMessage):
     def is_active(self):
         return self.status == '#active'
 
+    def is_finished(self):
+        return self.status == 'Finished'
+
     def has_bids(self):
         return self.buyer != 'None'
+
+
+class AuctionHouse:
+    def __init__(self, history):
+        data = []
+        with open(history, 'r') as f:
+            for line in f:
+                _ = json.loads(line)
+                _['timestamp'] = datetime.datetime.strptime(_['timestamp'], '%Y-%m-%dT%H:%M:%S')
+                data.append(_)
+        self.df = pd.DataFrame.from_records(data)
+
+    def structure(self):
+        print(list(self.df))
+
+    def last5trades(self, item):
+        df = self.df[['price', 'timestamp']].where(self.df.item == item).sort_values(by=['timestamp'], ascending=False)
+        print(df[['price']].head(n=5).values.tolist())
+
+    def plot(self, item):
+        self.df.where(self.df.item == item).plot(x='timestamp', y='price', label=item)
+        plt.show()
 
 
 class Message:
     def __init__(self, raw_msg):
         self._id = raw_msg.id
         self.date = raw_msg.date
+        self.edit_date = raw_msg.edit_date
         self.msg = raw_msg.message
 
-    def parse_transaction(self):
+    def parse_transactions(self):
         resource = ''
+        transactions = []
 
         for line in self.msg.splitlines():
             if line[0] in string.ascii_uppercase:
                 resource = line[0:-1]
             else:
                 q, p = line.split(',')[-1][1:-1].split(' x ')
-                return Transaction(self._id, self.date, resource, q, p)
+                transactions.append(Transaction(self._id, self.date, resource, q, p))
+
+        return transactions
 
     def parse_lot(self):
+        if self.edit_date is not None:
+            self.date = self.edit_date
         lines = self.msg.splitlines()
         lot_id = lines[0].split(' ')[1][1:]
         item = lines[0].split(' : ')[1]
         price = lines[2].split(' ')[2]
         buyer = lines[3].split(': ')[1]
         status = lines[5].split(': ')[1]
-        return {self._id: Lot(self._id, self.date, lot_id, item, price, buyer, status)}
+        return Lot(self._id, self.date, lot_id, item, price, buyer, status)
