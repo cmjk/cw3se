@@ -1,3 +1,4 @@
+import statistics
 from telethon import TelegramClient
 from entities import *
 
@@ -19,7 +20,9 @@ prices = []
 count = 0
 
 
-for message in client.iter_messages(src, search='hunter boots recipe'):
+l = client.get_messages(src, search='''"hunter boots recipe"''', limit=20)
+
+for message in l:
     m = Message(message).parse_lot()
     if m.is_finished():
         count += 1
@@ -28,3 +31,4 @@ for message in client.iter_messages(src, search='hunter boots recipe'):
         break
 
 print(prices)
+print(statistics.mean(prices))

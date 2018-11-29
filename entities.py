@@ -49,7 +49,10 @@ class Lot(ParsedMessage):
 
 
 class AuctionHouse:
-    def __init__(self, history):
+    def __init__(self):
+        self.df = None
+
+    def load_history(self, history):
         data = []
         with open(history, 'r') as f:
             for line in f:
@@ -57,6 +60,9 @@ class AuctionHouse:
                 _['timestamp'] = datetime.datetime.strptime(_['timestamp'], '%Y-%m-%dT%H:%M:%S')
                 data.append(_)
         self.df = pd.DataFrame.from_records(data)
+
+    def get_active_lots(self):
+        pass
 
     def structure(self):
         print(list(self.df))

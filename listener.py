@@ -16,7 +16,7 @@ lots, active_lots = dict(), dict()
 
 @client.on(events.NewMessage(chats=client.get_entity('https://t.me/cwExchange')))
 def transaction_new(event):
-    with open('data3.txt', 'a') as f:
+    with open('data.txt', 'a') as f:
         t = Message(event.message).parse_transactions()
         for tr in t:
             f.write(tr.to_string() + '\n')
